@@ -12,15 +12,15 @@ setwd("../") # back out to main folder
 
 ### read Kenya map data ###
 rm(list = ls())
-kenya = st_read(dsn = "./data/kenya/adm0", 
-                  layer = "geoBoundaries-KEN-ADM0", 
+kenya = st_read(dsn = "./data/kenya/adm0",
+                  layer = "geoBoundaries-KEN-ADM0",
                   stringsAsFactors = F) %>%
   select(c(shapeName, geometry))
-kenya_3 = st_read(dsn = "./data/kenya/adm3", 
-                layer = "geoBoundaries-KEN-ADM3", 
+kenya_3 = st_read(dsn = "./data/kenya/adm3",
+                layer = "geoBoundaries-KEN-ADM3",
                 stringsAsFactors = F) %>%
   select(c(shapeName, geometry))
-proj_crs <- st_crs(kenya)
+proj_crs = st_crs(kenya)
 
 ### read data ###
 afro_2 = read_excel("data/afrobarometer/KEN_r2.csv.xlsx") %>%
@@ -89,7 +89,8 @@ afro_2 = afro_2 %>%
   mutate(adm1 = locationlevel1, adm2 = locationlevel2, adm3 = locationlevel3, adm4 = locationlevel4) %>%
   # mutate round specific vars
   mutate(gender = q96, age = q80, edu = q84, race = q96new, urb = urbrur, employed = q89, reg_vote = q27,
-         trust_pres = q43a, trust_par = q43b, trust_court = q43j) %>% 
+         trust_pres = q43a, trust_par = q43b, trust_court = q43j, 
+         round = 2) %>% 
   # drop non-mutated variables
   select(-c(locationlevel1, locationlevel2, locationlevel3, locationlevel4, q96, q80, q84, q96new, urbrur, 
             q89, q27, q43a, q43b, q43j)) %>% 
@@ -104,7 +105,8 @@ afro_3 = afro_3 %>%
            q101, q1, q90, q102, urbrur, q94, q30, q55a, q55b, q55i)) %>%
   # mutate round specific vars
   mutate(gender = q101, age = q1, edu = q90, race = q102, urb = urbrur, employed = q94, vote = q30,
-         trust_pres = q55a, trust_par = q55b, trust_court = q55i) %>% 
+         trust_pres = q55a, trust_par = q55b, trust_court = q55i,
+         round = 3) %>% 
   # drop non-mutated variables
   select(-c(q101, q1, q90, q102, urbrur, 
             q94, q30, q55a, q55b, q55i)) %>% 
@@ -118,7 +120,8 @@ afro_4 = afro_4 %>%
            q101, q1, q89, q102, urbrur, q94, q23d, q49a, q49b, q49h)) %>%
   # mutate round specific vars
   mutate(gender = q101, age = q1, edu = q89, race = q102, urb = urbrur, employed = q94, vote = q23d,
-         trust_pres = q49a, trust_par = q49b, trust_court = q49h) %>% 
+         trust_pres = q49a, trust_par = q49b, trust_court = q49h,
+         round = 4) %>% 
   # drop non-mutated variables
   select(-c(q101, q1, q89, q102, urbrur, q94, q23d, q49a, q49b, q49h)) %>% 
   relocate("geometry", .after = last_col())
@@ -133,7 +136,8 @@ afro_5 = afro_5 %>%
   mutate(adm1 = locationlevel1, adm2 = locationlevel2, adm3 = locationlevel3, adm4 = locationlevel4) %>%
   # mutate round specific vars
   mutate(gender = q101, age = q1, edu = q97, race = q102, urb = urbrur, employed = q96, vote = q27,
-         trust_pres = q59a, trust_par = q59b, trust_court = q59j) %>% 
+         trust_pres = q59a, trust_par = q59b, trust_court = q59j, 
+         round = 5) %>% 
   # drop non-mutated variables
   select(-c(q101, q1, q97, q102, urbrur, q96, q27, q59a, q59b, q59j)) %>% 
   relocate("geometry", .after = last_col())
@@ -149,16 +153,16 @@ afro_6 = afro_6 %>%
   mutate(adm1 = locationlevel1, adm2 = locationlevel2, adm3 = locationlevel3, adm4 = locationlevel4) %>%
   # mutate round specific vars
   mutate(gender = q101, age = q1, edu = q97, race = q102, urb = urbrur, employed = q95, vote = q21,
-         trust_pres = q52a, trust_par = q52b, trust_court = q52j) %>% 
+         trust_pres = q52a, trust_par = q52b, trust_court = q52j, 
+         round = 6) %>% 
   # drop non-mutated variables
   select(-c(q101, q1, q97, q102, urbrur, q95, q21, q52a, q52b, q52j, 
             locationlevel1, locationlevel2, locationlevel3, locationlevel4)) %>% 
   relocate("geometry", .after = last_col())
 
-## Round 6 ##
+## Round 7 ##
 afro_7 = afro_7 %>%
   select(c(townvill,
-           precision_code, geographic_exactness,
            # following lines may have some overlap but different across rounds
            q101, q1, q97, q102, urbrur, q94, q22, q43a, q43b, q43i)) %>%
   # mutate round specific vars
@@ -166,15 +170,35 @@ afro_7 = afro_7 %>%
          trust_pres = q43a, trust_par = q43b, trust_court = q43i) %>% 
   # drop non-mutated variables
   select(-c(q101, q1, q97, q102, urbrur, q94, q22, q43a, q43b, q43i, 
-            locationlevel1, locationlevel2, locationlevel3, locationlevel4)) %>% 
+            round = 7)) %>% 
   relocate("geometry", .after = last_col())
-# no more precision codes since enumerators now use coordinates of device
+# no more precision codes or geographic_exactness since enumerators now use coordinates of device
 
 
 ### some vars change in coding over time ###
-  # from R4 to R5, education changes in coding #
   # R2 and R3 have unique voting codes, and R4 onward have identical codes #
+
+# recode voting to dichotomous (o if eligible but didn't vote, 1 if voted or tried to vote)
+afro_3$vote_binary = NA
+afro_3$vote_binary[afro_3$vote==2] = 0
+afro_3$vote_binary[afro_3$vote==1 | afro_3$vote==3 | afro_3$vote==4 | afro_3$vote==5 | afro_3$vote==6] = 1
+
+## code a variable so we can run robustness check later to remove tried to vote but didnt ##
+
   # Values 0-3 do not change across rounds for trust in parliament, but the refused/don't know answers change
   # Trust in court of law is same as above ^^^^^
 
 
+# Recoding -1 to NA across all columns (-1 means missing data in AfroB data)
+afro_2 = afro_2 %>%
+  mutate(across(where(is.numeric), ~na_if(., -1)))
+afro_3 = afro_3 %>%
+  mutate(across(where(is.numeric), ~na_if(., -1)))
+afro_4 = afro_4 %>%
+  mutate(across(where(is.numeric), ~na_if(., -1)))
+afro_5 = afro_5 %>%
+  mutate(across(where(is.numeric), ~na_if(., -1)))
+afro_6 = afro_6 %>%
+  mutate(across(where(is.numeric), ~na_if(., -1)))
+afro_7 = afro_7 %>%
+  mutate(across(where(is.numeric), ~na_if(., -1)))
