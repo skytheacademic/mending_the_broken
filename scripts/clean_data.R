@@ -4,7 +4,11 @@
 # 1/29/2024 #
 
 # load libraries
-library(tidyverse); library(janitor); library(readxl); library(sf); library(haven)
+library(tidyverse)
+library(janitor)
+library(readxl)
+library(sf)
+library(haven)
 
 # set working directory
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path)) # set to source file location
@@ -71,22 +75,19 @@ afro_7 = afro_7 %>%
   st_as_sf(coords = c("ea_gps_lo", "ea_gps_la"), crs = proj_crs) %>%
   mutate(dateintr = ymd(dateintr)) 
 
-
-
-
-
-
 ### filter the variables ###
 
 ## Round 2 ##
 afro_2 = afro_2 %>%
   # first line should be identical across datasets
-  select(c(regionstring, locationlevel1, locationlevel2, locationlevel3, locationlevel4, townvill, 
+  select(c(locationlevel1, locationlevel2, locationlevel3, locationlevel4, townvill, 
            precision_code, geographic_exactness,
   # following lines may have some overlap but different across rounds
            q96, q80, q84, q96new, urbrur, q89, q27, q43a, q43b, q43j)) %>%
   # mutate vars
   mutate(adm1 = locationlevel1, adm2 = locationlevel2, adm3 = locationlevel3, adm4 = locationlevel4) %>%
+  # not present in R2
+  mutate(district = NA) %>%
   # mutate round specific vars
   mutate(gender = q96, age = q80, edu = q84, race = q96new, urb = urbrur, employed = q89, reg_vote = q27,
          trust_pres = q43a, trust_par = q43b, trust_court = q43j, 
@@ -103,6 +104,8 @@ afro_3 = afro_3 %>%
            precision_code, geographic_exactness,
            # following lines may have some overlap but different across rounds
            q101, q1, q90, q102, urbrur, q94, q30, q55a, q55b, q55i)) %>%
+  # mutate vars (locationlevels not in this round)
+  mutate(adm1 = NA, adm2 = NA, adm3 = NA, adm4 = NA) %>%
   # mutate round specific vars
   mutate(gender = q101, age = q1, edu = q90, race = q102, urb = urbrur, employed = q94, vote = q30,
          trust_pres = q55a, trust_par = q55b, trust_court = q55i,
@@ -118,6 +121,8 @@ afro_4 = afro_4 %>%
            precision_code, geographic_exactness,
            # following lines may have some overlap but different across rounds
            q101, q1, q89, q102, urbrur, q94, q23d, q49a, q49b, q49h)) %>%
+  # mutate vars (locationlevels not in this round)
+  mutate(adm1 = NA, adm2 = NA, adm3 = NA, adm4 = NA) %>%
   # mutate round specific vars
   mutate(gender = q101, age = q1, edu = q89, race = q102, urb = urbrur, employed = q94, vote = q23d,
          trust_pres = q49a, trust_par = q49b, trust_court = q49h,
@@ -139,9 +144,9 @@ afro_5 = afro_5 %>%
          trust_pres = q59a, trust_par = q59b, trust_court = q59j, 
          round = 5) %>% 
   # drop non-mutated variables
-  select(-c(q101, q1, q97, q102, urbrur, q96, q27, q59a, q59b, q59j)) %>% 
+  select(-c(q101, q1, q97, q102, urbrur, q96, q27, q59a, q59b, q59j,
+            locationlevel1, locationlevel2, locationlevel3, locationlevel4)) %>% 
   relocate("geometry", .after = last_col())
-# NONE OF THE R5 ONLY VARS ARE PRESENT IN DATA
 
 ## Round 6 ##
 afro_6 = afro_6 %>%
@@ -151,6 +156,8 @@ afro_6 = afro_6 %>%
            q101, q1, q97, q102, urbrur, q95, q21, q52a, q52b, q52j)) %>%
   # mutate vars
   mutate(adm1 = locationlevel1, adm2 = locationlevel2, adm3 = locationlevel3, adm4 = locationlevel4) %>%
+  # this var doesn't exist in R6
+  mutate(district = NA) %>%
   # mutate round specific vars
   mutate(gender = q101, age = q1, edu = q97, race = q102, urb = urbrur, employed = q95, vote = q21,
          trust_pres = q52a, trust_par = q52b, trust_court = q52j, 
@@ -165,29 +172,243 @@ afro_7 = afro_7 %>%
   select(c(townvill,
            # following lines may have some overlap but different across rounds
            q101, q1, q97, q102, urbrur, q94, q22, q43a, q43b, q43i)) %>%
+  # mutate vars (locationlevels and other vars not in this round)
+  # no more precision codes or geographic_exactness since enumerators now use coordinates of device
+  mutate(adm1 = NA, adm2 = NA, adm3 = NA, adm4 = NA, district = NA, geographic_exactness = NA, precision_code = NA) %>%
   # mutate round specific vars
   mutate(gender = q101, age = q1, edu = q97, race = q102, urb = urbrur, employed = q94, vote = q22,
-         trust_pres = q43a, trust_par = q43b, trust_court = q43i) %>% 
+         trust_pres = q43a, trust_par = q43b, trust_court = q43i,
+         round = 7) %>% 
   # drop non-mutated variables
-  select(-c(q101, q1, q97, q102, urbrur, q94, q22, q43a, q43b, q43i, 
-            round = 7)) %>% 
+  select(-c(q101, q1, q97, q102, urbrur, q94, q22, q43a, q43b, q43i)) %>% 
   relocate("geometry", .after = last_col())
-# no more precision codes or geographic_exactness since enumerators now use coordinates of device
 
 
 ### some vars change in coding over time ###
   # R2 and R3 have unique voting codes, and R4 onward have identical codes #
-
-# recode voting to dichotomous (o if eligible but didn't vote, 1 if voted or tried to vote)
-afro_3$vote_binary = NA
-afro_3$vote_binary[afro_3$vote==2] = 0
-afro_3$vote_binary[afro_3$vote==1 | afro_3$vote==3 | afro_3$vote==4 | afro_3$vote==5 | afro_3$vote==6] = 1
-
-## code a variable so we can run robustness check later to remove tried to vote but didnt ##
-
   # Values 0-3 do not change across rounds for trust in parliament, but the refused/don't know answers change
   # Trust in court of law is same as above ^^^^^
+  # Trust in president is same as above    ^^^^^
 
+# recode voting to dichotomous (0 if eligible but didn't vote, 1 if voted or tried to vote, NA if ineligble or unknown)
+# recode employment to dichotomous (0 if no, 1 if yes, NA if neither)
+# recode any refusals/don't knows/etc. to NAs
+afro_2 = afro_2 %>%
+  mutate(
+    vote = NA,
+    vote_binary = NA,
+    employed_binary = case_when(
+      employed %in% c(0, 1) ~ 0,
+      employed %in% c(2:5) ~ 1,
+      TRUE ~ NA_real_ # other values (or NAs) remain as NA
+    ),
+    age = case_when(
+      age == 998 ~ NA_real_,
+      age == 999 ~ NA_real_,
+      TRUE ~ age
+    ),
+      edu = case_when(
+      edu == 98 ~ NA_real_,
+      edu == 99 ~ NA_real_,
+      TRUE ~ edu
+    ),
+    race = factor(race),
+    reg_vote = case_when(
+      reg_vote==9 ~ NA_real_,
+      reg_vote==98~ NA_real_,
+      TRUE ~ reg_vote
+    ),
+    trust_pres = case_when(
+      trust_pres== 9 ~ NA_real_,
+      trust_pres== 98 ~ NA_real_,
+      TRUE ~ trust_pres
+    ),
+    trust_par = case_when(
+      trust_par== 9 ~ NA_real_,
+      trust_par== 98 ~ NA_real_,
+      TRUE ~ trust_par
+    ),
+    trust_court = case_when(
+      trust_court== 9 ~ NA_real_,
+      trust_court== 98 ~ NA_real_,
+      TRUE ~ trust_court
+    )
+  )
+
+afro_3 = afro_3 %>%
+  mutate(
+    reg_vote = case_when(
+      vote == 7 ~ 0,
+      vote %in% c(1, 3, 4, 5, 6) ~ 1,
+      TRUE ~ NA_real_  
+    ),
+    race = factor(race),
+    vote_binary = case_when(
+      vote == 2 ~ 0,
+      vote %in% c(1, 3, 4, 5, 6) ~ 1,
+      TRUE ~ NA_real_  
+    ),
+    employed_binary = case_when(
+      employed %in% c(0, 1) ~ 0,
+      employed %in% c(2:5) ~ 1,
+      TRUE ~ NA_real_ 
+    ),
+    trust_pres = case_when(
+      trust_pres== 9 ~ NA_real_,
+      trust_pres== 98 ~ NA_real_,
+      TRUE ~ trust_pres
+    ),
+    trust_par = case_when(
+      trust_par== 9 ~ NA_real_,
+      trust_par== 98 ~ NA_real_,
+      TRUE ~ trust_par
+    ),
+    trust_court = case_when(
+      trust_court== 9 ~ NA_real_,
+      trust_court== 98 ~ NA_real_,
+      TRUE ~ trust_court
+    )
+  )
+
+afro_4 = afro_4 %>%
+  mutate(
+    reg_vote = case_when(
+      vote == 0 ~ 0,
+      vote %in% c(1, 3, 4, 5, 300) ~ 1,
+      TRUE ~ NA_real_  
+    ),
+    race = factor(race),
+    vote_binary = case_when(
+      vote == 2 ~ 0,
+      vote %in% c(1, 3, 4, 5, 300) ~ 1,
+      TRUE ~ NA_real_  
+    ),
+    employed_binary = case_when(
+      employed %in% c(0, 1) ~ 0,
+      employed %in% c(2:5) ~ 1,
+      TRUE ~ NA_real_ 
+    ),
+    trust_pres = case_when(
+      trust_pres== 9 ~ NA_real_,
+      trust_pres== 998 ~ NA_real_,
+      TRUE ~ trust_pres
+    ),
+    trust_par = case_when(
+      trust_par== 9 ~ NA_real_,
+      trust_par== 998 ~ NA_real_,
+      TRUE ~ trust_par
+    ),
+    trust_court = case_when(
+      trust_court== 9 ~ NA_real_,
+      trust_court== 998 ~ NA_real_,
+      TRUE ~ trust_court
+    )
+  )
+
+afro_5 = afro_5 %>%
+  mutate(
+    reg_vote = case_when(
+      vote == 0 ~ 0,
+      vote %in% c(1, 3, 4, 5, 6) ~ 1,
+      TRUE ~ NA_real_ 
+    ),
+    vote_binary = case_when(
+      vote == 2 ~ 0,
+      vote %in% c(1, 3, 4, 5, 6) ~ 1,
+      TRUE ~ NA_real_ 
+    ),
+    race = factor(race),
+    employed_binary = case_when(
+      employed %in% c(0, 1) ~ 0,
+      employed %in% c(2, 3) ~ 1,
+      TRUE ~ NA_real_ 
+    ),
+    trust_pres = case_when(
+      trust_pres== 9 ~ NA_real_,
+      trust_pres== 998 ~ NA_real_,
+      TRUE ~ trust_pres
+    ),
+    trust_par = case_when(
+      trust_par== 9 ~ NA_real_,
+      trust_par== 998 ~ NA_real_,
+      TRUE ~ trust_par
+    ),
+    trust_court = case_when(
+      trust_court== 9 ~ NA_real_,
+      trust_court== 998 ~ NA_real_,
+      TRUE ~ trust_court
+    )
+  )
+
+afro_6 = afro_6 %>%
+  mutate(
+    reg_vote = case_when(
+      vote == 0 ~ 0,
+      vote %in% c(1, 3, 4, 5, 6) ~ 1,
+      TRUE ~ NA_real_ 
+    ),
+    race = factor(race),
+    vote_binary = case_when(
+      vote == 2 ~ 0,
+      vote %in% c(1, 3, 4, 5, 6) ~ 1,
+      TRUE ~ NA_real_  
+    ),
+    employed_binary = case_when(
+      employed %in% c(0, 1) ~ 0,
+      employed %in% c(2, 3) ~ 1,
+      TRUE ~ NA_real_ 
+    ),
+    trust_pres = case_when(
+      trust_pres== 9 ~ NA_real_,
+      trust_pres== 98 ~ NA_real_,
+      TRUE ~ trust_pres
+    ),
+    trust_par = case_when(
+      trust_par== 9 ~ NA_real_,
+      trust_par== 98 ~ NA_real_,
+      TRUE ~ trust_par
+    ),
+    trust_court = case_when(
+      trust_court== 9 ~ NA_real_,
+      trust_court== 98 ~ NA_real_,
+      TRUE ~ trust_court
+    )
+  )
+
+afro_7 = afro_7 %>%
+  mutate(
+    reg_vote = case_when(
+      vote == 0 ~ 0,
+      vote %in% c(1, 3, 4, 5, 6) ~ 1,
+      TRUE ~ NA_real_ 
+    ),
+    race = factor(race),
+    vote_binary = case_when(
+      vote == 2 ~ 0,
+      vote %in% c(1, 3, 4, 5, 6) ~ 1,
+      TRUE ~ NA_real_  
+    ),
+    employed_binary = case_when(
+      employed %in% c(0, 1) ~ 0,
+      employed %in% c(2, 3) ~ 1,
+      TRUE ~ NA_real_ 
+    ),
+    trust_pres = case_when(
+      trust_pres== 8 ~ NA_real_,
+      trust_pres== 9 ~ NA_real_,
+      TRUE ~ trust_pres
+    ),
+    trust_par = case_when(
+      trust_par== 8 ~ NA_real_,
+      trust_par== 9 ~ NA_real_,
+      TRUE ~ trust_par
+    ),
+    trust_court = case_when(
+      trust_court== 8 ~ NA_real_,
+      trust_court== 9 ~ NA_real_,
+      TRUE ~ trust_court
+    )
+  )
 
 # Recoding -1 to NA across all columns (-1 means missing data in AfroB data)
 afro_2 = afro_2 %>%
@@ -202,3 +423,26 @@ afro_6 = afro_6 %>%
   mutate(across(where(is.numeric), ~na_if(., -1)))
 afro_7 = afro_7 %>%
   mutate(across(where(is.numeric), ~na_if(., -1)))
+
+df = rbind(afro_2, afro_3, afro_4, afro_5, afro_6, afro_7)
+rm(afro_2, afro_3, afro_4, afro_5, afro_6, afro_7, proj_crs)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+####################
+## issues found so far:
+# q27c (vote) for R2 not located in data 
+# Q27A has 0s despite 0s not existing in the codebook
+# NONE OF THE R5 ONLY VARS ARE PRESENT IN DATA
+####################
