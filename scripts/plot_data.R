@@ -35,3 +35,23 @@ ggplot() +
         plot.margin = unit(c(0,0,0,0), "cm"), legend.margin=margin(c(5,5,5,5)), 
         legend.key.size = unit(0.5, 'cm'))
 plot(d)
+
+
+ggplot(df, aes(x = factor(round), fill = factor(trust_pres))) +
+  geom_bar(position = "fill") +
+  scale_fill_manual(values = c("#e63946", "#f1faee", "#a8dadc", "#457b9d"),
+                    labels = c("Not at all", "Just a little", "Somewhat", "A lot")) +
+  labs(title = "Proportion of Trust Levels by Round",
+       x = "Round",
+       y = "Proportion",
+       fill = "Trust in Presidency") +
+  theme_minimal()
+
+ggplot(df, aes(x = factor(round), y = trust_par, fill = factor(round))) +
+  geom_violin() +
+  scale_y_continuous(breaks = 0:3, labels = c("Not at all", "Just a little", "Somewhat", "A lot")) +
+  labs(title = "Density of Trust in Presidency by Round",
+       x = "Round",
+       y = "Trust in Presidency") +
+  theme_minimal() +
+  theme(legend.position = "none")
