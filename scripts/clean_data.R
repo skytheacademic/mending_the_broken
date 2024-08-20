@@ -80,7 +80,7 @@ afro_7 = afro_7 %>%
 ## Round 2 ##
 afro_2 = afro_2 %>%
   # first line should be identical across datasets
-  select(c(locationlevel1, locationlevel2, locationlevel3, locationlevel4, townvill, 
+  select(c(dateintr, locationlevel1, locationlevel2, locationlevel3, locationlevel4, townvill, 
            precision_code, geographic_exactness,
   # following lines may have some overlap but different across rounds
            q96, q80, q84, q96new, urbrur, q89, q27, q43a, q43b, q43j)) %>%
@@ -100,7 +100,7 @@ afro_2 = afro_2 %>%
 
 ## Round 3 ##
 afro_3 = afro_3 %>%
-  select(c(district, townvill, 
+  select(c(dateintr, district, townvill, 
            precision_code, geographic_exactness,
            # following lines may have some overlap but different across rounds
            q101, q1, q90, q102, urbrur, q94, q30, q55a, q55b, q55i)) %>%
@@ -117,7 +117,7 @@ afro_3 = afro_3 %>%
 
 ## Round 4 ##
 afro_4 = afro_4 %>%
-  select(c(district, townvill, 
+  select(c(dateintr, district, townvill, 
            precision_code, geographic_exactness,
            # following lines may have some overlap but different across rounds
            q101, q1, q89, q102, urbrur, q94, q23d, q49a, q49b, q49h)) %>%
@@ -133,7 +133,7 @@ afro_4 = afro_4 %>%
 
 ## Round 5 ##
 afro_5 = afro_5 %>%
-  select(c(district, townvill, locationlevel1, locationlevel2, locationlevel3, locationlevel4,
+  select(c(dateintr, district, townvill, locationlevel1, locationlevel2, locationlevel3, locationlevel4,
            precision_code, geographic_exactness,
            # following lines may have some overlap but different across rounds
            q101, q1, q97, q102, urbrur, q96, q27, q59a, q59b, q59j)) %>%
@@ -150,7 +150,7 @@ afro_5 = afro_5 %>%
 
 ## Round 6 ##
 afro_6 = afro_6 %>%
-  select(c(townvill, locationlevel1, locationlevel2, locationlevel3, locationlevel4,
+  select(c(dateintr, townvill, locationlevel1, locationlevel2, locationlevel3, locationlevel4,
            precision_code, geographic_exactness,
            # following lines may have some overlap but different across rounds
            q101, q1, q97, q102, urbrur, q95, q21, q52a, q52b, q52j)) %>%
@@ -169,7 +169,7 @@ afro_6 = afro_6 %>%
 
 ## Round 7 ##
 afro_7 = afro_7 %>%
-  select(c(townvill,
+  select(c(dateintr, townvill,
            # following lines may have some overlap but different across rounds
            q101, q1, q97, q102, urbrur, q94, q22, q43a, q43b, q43i)) %>%
   # mutate vars (locationlevels and other vars not in this round)
@@ -188,7 +188,7 @@ afro_7 = afro_7 %>%
   # R2 and R3 have unique voting codes, and R4 onward have identical codes #
   # Values 0-3 do not change across rounds for trust in parliament, but the refused/don't know answers change
   # Trust in court of law is same as above ^^^^^
-  # Trust in president is same as above    ^^^^^
+  # Trust in president    is same as above ^^^^^
 
 # recode voting to dichotomous (0 if eligible but didn't vote, 1 if voted or tried to vote, NA if ineligble or unknown)
 # recode employment to dichotomous (0 if no, 1 if yes, NA if neither)
@@ -253,6 +253,11 @@ afro_3 = afro_3 %>%
       employed %in% c(2:5) ~ 1,
       TRUE ~ NA_real_ 
     ),
+    age = case_when(
+      age == 998 ~ NA_real_,
+      age == 999 ~ NA_real_,
+      TRUE ~ age
+    ),
     trust_pres = case_when(
       trust_pres== 9 ~ NA_real_,
       trust_pres== 98 ~ NA_real_,
@@ -288,6 +293,11 @@ afro_4 = afro_4 %>%
       employed %in% c(2:5) ~ 1,
       TRUE ~ NA_real_ 
     ),
+    age = case_when(
+      age == 998 ~ NA_real_,
+      age == 999 ~ NA_real_,
+      TRUE ~ age
+    ),
     trust_pres = case_when(
       trust_pres== 9 ~ NA_real_,
       trust_pres== 998 ~ NA_real_,
@@ -323,6 +333,11 @@ afro_5 = afro_5 %>%
       employed %in% c(2, 3) ~ 1,
       TRUE ~ NA_real_ 
     ),
+    age = case_when(
+      age == 998 ~ NA_real_,
+      age == 999 ~ NA_real_,
+      TRUE ~ age
+    ),
     trust_pres = case_when(
       trust_pres== 9 ~ NA_real_,
       trust_pres== 998 ~ NA_real_,
@@ -357,6 +372,11 @@ afro_6 = afro_6 %>%
       employed %in% c(0, 1) ~ 0,
       employed %in% c(2, 3) ~ 1,
       TRUE ~ NA_real_ 
+    ),
+    age = case_when(
+      age == 998 ~ NA_real_,
+      age == 999 ~ NA_real_,
+      TRUE ~ age
     ),
     trust_pres = case_when(
       trust_pres== 9 ~ NA_real_,
@@ -393,6 +413,11 @@ afro_7 = afro_7 %>%
       employed %in% c(2, 3) ~ 1,
       TRUE ~ NA_real_ 
     ),
+    age = case_when(
+      age == 998 ~ NA_real_,
+      age == 999 ~ NA_real_,
+      TRUE ~ age
+    ),
     trust_pres = case_when(
       trust_pres== 8 ~ NA_real_,
       trust_pres== 9 ~ NA_real_,
@@ -425,10 +450,19 @@ afro_7 = afro_7 %>%
   mutate(across(where(is.numeric), ~na_if(., -1)))
 
 df = rbind(afro_2, afro_3, afro_4, afro_5, afro_6, afro_7)
-rm(afro_2, afro_3, afro_4, afro_5, afro_6, afro_7, proj_crs)
+rm(afro_2, afro_3, afro_4, afro_5, afro_6, afro_7)
 
 
+hearings = read.csv("./data/hearings/hearing_locations.csv") %>%
+  mutate(date = dmy(hear_date), t_ind = 1) %>% # turn date into date object, create treatment indicator
+  select(-c(hear_date)) %>%
+  st_as_sf(coords = c("longitude", "latitude"), crs = proj_crs)
 
+
+## merge kenya into hearings/afroB data
+## create a binary indicator if someone is located in a region post-treatment
+  # make a df with date & adm3 from hearings df
+  # merge with main hearing data and then do a if > date then t_ind = 1? 
 
 
 
